@@ -20,21 +20,21 @@ import cv2
 
 from interfaces.msg import CameraStream
 
+from std_msgs.msg import String
 
 class CameraPublisher(Node):
 
     def __init__(self, source='0'):
         super().__init__('minimal_publisher')
         self.publisher_ = self.create_publisher(CameraStream, 'camera_stream', 10)
+        # serialize image
+        self.msg = CameraStream()
 
         self.cap = cv2.VideoCapture(eval(source) if source.isnumeric() else source)
         assert self.cap.isOpened(), f'Failed to open {source}'
-        w = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        h = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = self.cap.get(cv2.CAP_PROP_FPS) % 100
         _, self.img = self.cap.read()  # guarantee first frame
 
-        timer_period = 0.01  # seconds
+        timer_period = 0  # seconds
         self.timer = self.create_timer(timer_period, self.frame_update)
         self.i = 0
 
@@ -42,14 +42,14 @@ class CameraPublisher(Node):
         # get frame from camera
         if self.cap.isOpened():
             self.cap.grab()
-            success, im = self.cap.retrieve()
-            self.img = im if success else self.img * 0
-            # serialize image
-            msg = CameraStream()
-            msg.height, msg.width, msg.channel = im.shape
-            msg.img = self.img.reshape(-1).tolist()
-            msg.pixel_type = 'uint8'
-            self.publisher_.publish(msg)
+            success, img = self.cap.retrieve()
+            if not success:
+                self.msg.img = (self.img * 0).ravel().tolist()
+            self.msg.height, self.msg.width, self.msg.channel = img.shape
+            # ravel() do not need to copy array and it is faster 30.1ms for size(3,640,640)
+            self.msg.img = img.reshape(-1).tolist()
+            self.msg.pixel_type = 'uint8'
+            self.publisher_.publish(self.msg)
             self.get_logger().info(f'Publishing frame: {self.i}')
             self.i += 1
         else:

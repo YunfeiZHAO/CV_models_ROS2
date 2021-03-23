@@ -24,6 +24,8 @@ setup(
             'listener = detection.subscriber_member_function:main',
             'camera_publisher = detection.camera_publisher:main',
             'yolo = detection.yolo_detector_subscriber:main',
+            'yolo_detector = detection.yolo_detector_subscriber_publisher:main',
+            'show = detection.result_subscriber:main'
         ],
     },
 )
