@@ -16,11 +16,15 @@
 import rclpy
 from rclpy.node import Node
 
+import base64
 import cv2
+import numpy as np
 
 from interfaces.msg import CameraStream
 
-from std_msgs.msg import String
+import sys
+import os
+
 
 class CameraPublisher(Node):
 
@@ -37,6 +41,7 @@ class CameraPublisher(Node):
         timer_period = 0  # seconds
         self.timer = self.create_timer(timer_period, self.frame_update)
         self.i = 0
+        # self.a = [0]*921600
 
     def frame_update(self):
         # get frame from camera
@@ -47,7 +52,11 @@ class CameraPublisher(Node):
                 self.msg.img = (self.img * 0).ravel().tolist()
             self.msg.height, self.msg.width, self.msg.channel = img.shape
             # ravel() do not need to copy array and it is faster 30.1ms for size(3,640,640)
-            self.msg.img = img.reshape(-1).tolist()
+            # self.msg.img = img.ravel().tolist()
+            # self.msg.img = base64.b64decode(img)
+            # self.msg.img = np.array2string(img)
+            self.msg.img = img.tobytes()
+            #img.tobytes()
             self.msg.pixel_type = 'uint8'
             self.publisher_.publish(self.msg)
             self.get_logger().info(f'Publishing frame: {self.i}')
@@ -71,4 +80,7 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    main()
+    if '-O' in sys.argv:
+        main()
+    else:
+        os.execl(sys.executable, sys.executable, '-O', *sys.argv, '-O')

@@ -7,6 +7,7 @@ from rclpy.node import Node
 from interfaces.msg import CameraStream
 
 
+
 class ResultSubscriber(Node):
     def __init__(self):
         super().__init__('result_detector')
